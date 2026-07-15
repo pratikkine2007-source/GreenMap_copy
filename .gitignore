@@ -1,0 +1,9 @@
+.env.local
+.npm-cache/
+
+node_modules/
+dist/
+.codex/
+outputs/
+work/
+.env
