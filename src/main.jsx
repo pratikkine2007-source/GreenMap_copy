@@ -5,7 +5,11 @@ import { Campus3DMap } from './components/Campus3DMap';
 import './styles.css';
 
 function App() {
-  const [view, setView] = useState('story');
+  const [view, setView] = useState('3d');
+  if (view === '3d') {
+    return <Campus3DMap onShowIllustrated={() => setView('story')} />;
+  }
+
   return (
     <main className="site-shell">
       <header className="site-header">
@@ -17,7 +21,7 @@ function App() {
         <button type="button" className={view === 'story' ? 'is-active' : ''} aria-pressed={view === 'story'} onClick={() => setView('story')}>Illustrated map</button>
         <button type="button" className={view === '3d' ? 'is-active' : ''} aria-pressed={view === '3d'} onClick={() => setView('3d')}>3D campus view</button>
       </div>
-      {view === 'story' ? <SustainabilityMap /> : <Campus3DMap />}
+      <SustainabilityMap />
     </main>
   );
 }

@@ -51,19 +51,56 @@ function hideNonCampusLandmarks(map) {
   });
 }
 
+function markerVisual(category) {
+  const key = String(category ?? '').toLowerCase();
+  const visuals = {
+    water_conservation: { color: '#25829c', file: 'water-conservation.svg' },
+    water_reuse: { color: '#25829c', file: 'water-reuse.svg' },
+    renewable_energy: { color: '#d88918', file: 'renewable-energy.svg' },
+    waste_management: { color: '#5f913e', file: 'waste-management.svg' },
+    waste_to_energy: { color: '#a85d31', file: 'waste-to-energy.svg' },
+    green_buildings: { color: '#487a50', file: 'green-buildings.svg' },
+    energy_efficiency: { color: '#7a5aa6', file: 'energy-efficiency.svg' },
+    carbon_research: { color: '#5469a8', file: 'carbon-research.svg' },
+    sustainability_research: { color: '#326f71', file: 'sustainability-research.svg' },
+  };
+  return visuals[key] ?? { color: '#bd3455', file: 'default.svg' };
+}
+
 function makePopupContent(initiative) {
   const content = document.createElement('article');
   content.className = 'initiative-popup';
+  const category = document.createElement('p');
+  category.className = 'initiative-popup-category';
+  category.textContent = String(initiative.category ?? 'Sustainability initiative').replaceAll('_', ' ');
   const title = document.createElement('h3');
   title.textContent = initiative.title;
-  content.append(title);
+  content.append(category, title);
+  if (initiative.image_url) {
+    const image = document.createElement('img');
+    image.src = initiative.image_url;
+    image.alt = initiative.title;
+    image.loading = 'lazy';
+    content.append(image);
+  }
+  if (initiative.description) {
+    const description = document.createElement('p');
+    description.textContent = initiative.description;
+    content.append(description);
+  }
+  if (initiative.image_stat) {
+    const stat = document.createElement('p');
+    stat.className = 'initiative-popup-impact';
+    stat.textContent = initiative.image_stat;
+    content.append(stat);
+  }
   return content;
 }
 
 async function addInitiativeMarkers(map, markers) {
   if (!supabase) throw new Error('Supabase environment variables are missing.');
   const { data, error } = await supabase.from('initiatives')
-    .select('title, longitude, latitude')
+    .select('title, category, longitude, latitude, description, image_url, image_stat')
     .eq('is_published', true);
   if (error) throw error;
   const validInitiatives = data.filter((item) => Number.isFinite(Number(item.longitude)) && Number.isFinite(Number(item.latitude)));
@@ -73,8 +110,15 @@ async function addInitiativeMarkers(map, markers) {
     element.type = 'button';
     element.className = 'sustainability-map-marker';
     element.setAttribute('aria-label', `Show details for ${initiative.title}`);
-    element.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-5.1 7-12A7 7 0 1 0 5 9c0 6.9 7 12 7 12Z"/><circle cx="12" cy="9" r="2.2"/></svg>';
-    const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 20 })
+    const visual = markerVisual(initiative.category);
+    element.style.setProperty('--initiative-color', visual.color);
+    element.innerHTML = `<span class="marker-label">${initiative.title}</span><span class="marker-pin"><img src="/initiative-icons/${visual.file}" alt="" aria-hidden="true" /></span>`;
+    const popup = new maplibregl.Popup({
+      closeButton: false,
+      closeOnClick: false,
+      offset: 20,
+      maxWidth: '300px',
+    })
       .setLngLat(coordinates)
       .setDOMContent(makePopupContent(initiative));
     const marker = new maplibregl.Marker({ element, anchor: 'bottom', rotationAlignment: 'viewport', pitchAlignment: 'viewport' })
@@ -89,8 +133,9 @@ async function addInitiativeMarkers(map, markers) {
 }
 
 /** Real-world 3D view with an intentionally reduced landmark set. */
-export function Campus3DMap() {
+export function Campus3DMap({ onShowIllustrated }) {
   const container = useRef(null);
+  const [isArriving, setIsArriving] = useState(true);
   const [markerStatus, setMarkerStatus] = useState('Loading sustainability markers…');
 
   useEffect(() => {
@@ -100,11 +145,12 @@ export function Campus3DMap() {
       container: container.current,
       style: 'https://tiles.openfreemap.org/styles/bright',
       center: IITB_CENTER,
-      zoom: 15.8,
+      zoom: 2.7,
       renderWorldCopies: false,
-      pitch: 55,
-      bearing: -28,
+      pitch: 0,
+      bearing: -12,
       maxPitch: 75,
+      projection: 'globe',
       attributionControl: true,
       canvasContextAttributes: { antialias: true },
     });
@@ -159,6 +205,25 @@ export function Campus3DMap() {
         source: 'iitb-campus-boundary',
         paint: { 'line-color': '#446b45', 'line-width': 2.5, 'line-opacity': 0.9 },
       });
+
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const arrivalDelay = reducedMotion ? 0 : 1100;
+      const flightDuration = reducedMotion ? 0 : 5200;
+      const startFlight = window.setTimeout(() => {
+        map.flyTo({
+          center: IITB_CENTER,
+          zoom: 15.8,
+          pitch: 55,
+          bearing: -28,
+          duration: flightDuration,
+          essential: true,
+        });
+        window.setTimeout(() => {
+          if (!disposed) setIsArriving(false);
+        }, flightDuration ? Math.max(0, flightDuration - 1250) : 0);
+      }, arrivalDelay);
+
+      map.once('remove', () => window.clearTimeout(startFlight));
     });
 
     return () => {
@@ -169,15 +234,27 @@ export function Campus3DMap() {
   }, []);
 
   return (
-    <section className="map-section" aria-labelledby="map-3d-heading">
-      <div className="map-toolbar">
-        <div>
-          <h2 id="map-3d-heading">3D IIT Bombay campus</h2>
-          <p>Major campus landmarks remain visible; minor transport, retail, and service POIs are hidden.</p>
-        </div>
+    <section className={`campus-experience ${isArriving ? 'is-arriving' : ''}`} aria-label="Immersive 3D IIT Bombay sustainability map">
+      <div ref={container} className="campus-experience-map" aria-label="Interactive 3D map of IIT Bombay campus" />
+      <div className="campus-experience-vignette" aria-hidden="true" />
+      <div className="campus-experience-clouds" aria-hidden="true">
+        <span className="cloud cloud-one" />
+        <span className="cloud cloud-two" />
+        <span className="cloud cloud-three" />
       </div>
-      <div ref={container} className="map-frame maplibre-frame" aria-label="Interactive 3D map of IIT Bombay campus" />
-      <p className="map-note">{markerStatus} · Drag to rotate, right-click to tilt, and use the controls to zoom.</p>
+      <div className="campus-experience-intro" aria-hidden={!isArriving}>
+        <p>IIT Bombay · Sustainability</p>
+        <h1>Discover a greener campus</h1>
+        <span>Arriving at IIT Bombay</span>
+      </div>
+      <div className="campus-experience-ui">
+        <div className="campus-experience-brand">
+          <span>GreenMap</span>
+          <small>IIT Bombay sustainability</small>
+        </div>
+        <button type="button" className="campus-experience-switch" onClick={onShowIllustrated}>Illustrated map</button>
+      </div>
+      <p className="campus-experience-status" aria-live="polite">{markerStatus}</p>
     </section>
   );
 }
