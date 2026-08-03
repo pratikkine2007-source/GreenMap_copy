@@ -5,6 +5,7 @@ import campusBoundaryText from '../data/iitb-circular-boundary.geojson?raw';
 import { supabase } from '../lib/supabase';
 
 const IITB_CENTER = [72.913, 19.132];
+const CAMPUS_MAX_BOUNDS = [[72.898, 19.121], [72.925, 19.147]];
 const campusBoundary = JSON.parse(campusBoundaryText);
 const campusPolygon = campusBoundary.features[0].geometry;
 const campusRing = campusPolygon.coordinates[0];
@@ -133,14 +134,16 @@ async function addInitiativeMarkers(map, markers) {
 }
 
 /** Real-world 3D view with an intentionally reduced landmark set. */
-export function Campus3DMap({ onShowIllustrated }) {
+export function Campus3DMap() {
   const container = useRef(null);
   const [isArriving, setIsArriving] = useState(true);
+  const [showIntro, setShowIntro] = useState(true);
   const [markerStatus, setMarkerStatus] = useState('Loading sustainability markers…');
 
   useEffect(() => {
     let disposed = false;
     const initiativeMarkers = [];
+    let arrivalMarker;
     const map = new maplibregl.Map({
       container: container.current,
       style: 'https://tiles.openfreemap.org/styles/bright',
@@ -157,14 +160,29 @@ export function Campus3DMap({ onShowIllustrated }) {
 
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
     map.addControl(new maplibregl.ScaleControl({ maxWidth: 120, unit: 'metric' }));
+    map.dragPan.disable();
+    map.scrollZoom.disable();
+    map.boxZoom.disable();
+    map.dragRotate.disable();
+    map.keyboard.disable();
+    map.doubleClickZoom.disable();
+    map.touchZoomRotate.disable();
+    map.getCanvas().style.cursor = 'wait';
 
     map.on('load', () => {
-      addInitiativeMarkers(map, initiativeMarkers)
-        .then((count) => { if (!disposed) setMarkerStatus(`${count} sustainability markers loaded`); })
-        .catch((error) => {
-          console.error('Could not load initiatives from Supabase:', error);
-          if (!disposed) setMarkerStatus(`Markers could not load: ${error.message}`);
-        });
+      const arrivalElement = document.createElement('div');
+      arrivalElement.className = 'arrival-campus-marker';
+      arrivalElement.setAttribute('aria-label', 'IIT Bombay');
+      arrivalElement.innerHTML = '<span>IIT Bombay</span><i aria-hidden="true"></i>';
+      arrivalMarker = new maplibregl.Marker({
+        element: arrivalElement,
+        anchor: 'bottom',
+        rotationAlignment: 'viewport',
+        pitchAlignment: 'viewport',
+      })
+        .setLngLat(IITB_CENTER)
+        .addTo(map);
+
       try {
         hideNonCampusLandmarks(map);
       } catch (error) {
@@ -185,7 +203,7 @@ export function Campus3DMap({ onShowIllustrated }) {
         filter: ['!=', ['get', 'hide_3d'], true],
         paint: {
           'fill-extrusion-color': '#72966e',
-          'fill-extrusion-height': ['interpolate', ['linear'], ['zoom'], 15, 0, 16, ['coalesce', ['get', 'render_height'], 8]],
+          'fill-extrusion-height': ['interpolate', ['linear'], ['zoom'], 15, 0, 16, ['*', ['coalesce', ['get', 'render_height'], 8], 1.75]],
           'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0],
           'fill-extrusion-opacity': 0.85,
         },
@@ -208,7 +226,11 @@ export function Campus3DMap({ onShowIllustrated }) {
 
       const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       const arrivalDelay = reducedMotion ? 0 : 1100;
-      const flightDuration = reducedMotion ? 0 : 5200;
+      const flightDuration = reducedMotion ? 0 : 7200;
+      const introDuration = reducedMotion ? 0 : 1800;
+      const introTimer = window.setTimeout(() => {
+        if (!disposed) setShowIntro(false);
+      }, introDuration);
       const startFlight = window.setTimeout(() => {
         map.flyTo({
           center: IITB_CENTER,
@@ -218,17 +240,42 @@ export function Campus3DMap({ onShowIllustrated }) {
           duration: flightDuration,
           essential: true,
         });
-        window.setTimeout(() => {
-          if (!disposed) setIsArriving(false);
-        }, flightDuration ? Math.max(0, flightDuration - 1250) : 0);
+        const arrivalTimer = window.setTimeout(() => {
+          if (!disposed) {
+            map.setMaxBounds(CAMPUS_MAX_BOUNDS);
+            map.setMinZoom(14.2);
+            map.setMaxZoom(18.5);
+            map.dragPan.enable();
+            map.scrollZoom.enable();
+            map.boxZoom.enable();
+            map.dragRotate.enable();
+            map.keyboard.enable();
+            map.doubleClickZoom.enable();
+            map.touchZoomRotate.enable();
+            map.getCanvas().style.cursor = '';
+            arrivalMarker?.remove();
+            setIsArriving(false);
+            addInitiativeMarkers(map, initiativeMarkers)
+              .then((count) => { if (!disposed) setMarkerStatus(`${count} sustainability markers loaded`); })
+              .catch((error) => {
+                console.error('Could not load initiatives from Supabase:', error);
+                if (!disposed) setMarkerStatus(`Markers could not load: ${error.message}`);
+              });
+          }
+        }, flightDuration);
+        map.once('remove', () => window.clearTimeout(arrivalTimer));
       }, arrivalDelay);
 
-      map.once('remove', () => window.clearTimeout(startFlight));
+      map.once('remove', () => {
+        window.clearTimeout(introTimer);
+        window.clearTimeout(startFlight);
+      });
     });
 
     return () => {
       disposed = true;
       initiativeMarkers.forEach(({ marker, popup }) => { marker.remove(); popup.remove(); });
+      arrivalMarker?.remove();
       map.remove();
     };
   }, []);
@@ -242,17 +289,15 @@ export function Campus3DMap({ onShowIllustrated }) {
         <span className="cloud cloud-two" />
         <span className="cloud cloud-three" />
       </div>
-      <div className="campus-experience-intro" aria-hidden={!isArriving}>
-        <p>IIT Bombay · Sustainability</p>
+      <div className={`campus-experience-intro ${showIntro ? '' : 'is-hidden'}`} aria-hidden={!showIntro}>
         <h1>Discover a greener campus</h1>
         <span>Arriving at IIT Bombay</span>
       </div>
       <div className="campus-experience-ui">
         <div className="campus-experience-brand">
           <span>GreenMap</span>
-          <small>IIT Bombay sustainability</small>
+          <small>Sustainability Cell, IIT Bombay</small>
         </div>
-        <button type="button" className="campus-experience-switch" onClick={onShowIllustrated}>Illustrated map</button>
       </div>
       <p className="campus-experience-status" aria-live="polite">{markerStatus}</p>
     </section>
