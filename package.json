@@ -9,14 +9,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "latest",
     "@vitejs/plugin-react": "latest",
+    "cesium": "^1.144.0",
     "leaflet": "latest",
     "maplibre-gl": "latest",
     "react": "latest",
     "react-dom": "latest",
     "react-leaflet": "latest",
-    "@supabase/supabase-js": "latest",
-    "vite": "latest"
-  },
-  "devDependencies": {}
+    "vite": "latest",
+    "vite-plugin-cesium": "^1.2.23"
+  }
 }

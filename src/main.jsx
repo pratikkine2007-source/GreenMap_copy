@@ -1,13 +1,13 @@
-import { StrictMode, useState } from 'react';
+import { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { SustainabilityMap } from './components/SustainabilityMap';
-import { Campus3DMap } from './components/Campus3DMap';
+import { CampusExperience } from './components/CampusExperience';
 import './styles.css';
 
 function App() {
   const [view, setView] = useState('3d');
   if (view === '3d') {
-    return <Campus3DMap onShowIllustrated={() => setView('story')} />;
+    return <CampusExperience />;
   }
 
   return (
@@ -26,8 +26,4 @@ function App() {
   );
 }
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+createRoot(document.getElementById('root')).render(<App />);
