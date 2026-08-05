@@ -118,38 +118,23 @@ export function CampusGlobe({ onDescentStart, onDescentComplete }) {
         </div>
       )}
 
-      {/* ---- Cinematic hero cover (Earth visible behind) ---- */}
+      {/* ---- Hero cover (Earth visible behind) ---- */}
       <div className={`hero-cover hero-cover--globe ${phase === 'intro' ? '' : 'is-lifting'}`} aria-hidden={phase !== 'intro'}>
-        <div className="hero-particles" aria-hidden="true">
-          {Array.from({ length: 7 }).map((_, i) => <span key={i} className={`leaf leaf-${i + 1}`} />)}
-        </div>
         <div className="hero-content">
           <div className="hero-brand">
             <span className="hero-mark" aria-hidden="true" />
             <span className="hero-brand-text"><strong>GreenMap</strong><small>Sustainability Cell · IIT Bombay</small></span>
           </div>
-          <p className="hero-eyebrow"><span className="hero-ping" aria-hidden="true" />Live campus sustainability atlas</p>
-          <h1 className="hero-title">
-            <span className="hero-line"><span>A</span></span>
-            <span className="hero-line"><span className="hero-accent">greener</span></span>
-            <span className="hero-line"><span>IIT Bombay,</span></span>
-            <span className="hero-line"><span className="hero-muted">mapped.</span></span>
-          </h1>
+          <h1 className="hero-title">A <span className="hero-accent">greener</span> IIT&nbsp;Bombay, mapped.</h1>
           <p className="hero-sub">
-            Descend from orbit into a living 3D model of the campus and trace every solar array,
-            water-reuse loop and waste-to-energy plant, pinned exactly where it stands.
+            A living 3D model of the campus — trace every solar array, water-reuse loop and
+            waste-to-energy plant, pinned exactly where it stands.
           </p>
-          <div className="hero-stats" role="list">
-            <div className="hero-stat" role="listitem"><strong>21+</strong><span>initiatives mapped</span></div>
-            <div className="hero-stat" role="listitem"><strong>9</strong><span>impact categories</span></div>
-            <div className="hero-stat" role="listitem"><strong>550</strong><span>acre campus</span></div>
-          </div>
           <div className="hero-actions">
             <button type="button" className="hero-cta" onClick={beginDescent} disabled={!hasToken}>
-              <span>Enter the campus</span>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15m0 0-6-6m6 6-6 6" /></svg>
+              Enter the campus
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m0 0-5-5m5 5-5 5" /></svg>
             </button>
-            <span className="hero-hint">Orbital fly-in · ~6s</span>
           </div>
         </div>
       </div>
