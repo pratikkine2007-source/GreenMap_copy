@@ -93,6 +93,23 @@ h1 { margin-bottom: 10px; font-size: clamp(2rem, 5vw, 3.6rem); line-height: 1; }
 .hero-brand-text strong { display: block; color: #f4fbf7; font-size: .95rem; font-weight: 600; letter-spacing: -.01em; line-height: 1.2; }
 .hero-brand-text small { display: block; margin-top: 2px; color: rgba(206,228,218,.55); font-size: .78rem; font-weight: 400; }
 
+/*Changes made to the hero logo and brand text for better visibility and branding*/
+.hero-logo,
+.hud-logo {
+  display: block;
+  object-fit: contain;
+}
+
+.hero-logo {
+  width: 44px;
+  height: 44px;
+}
+
+.hud-logo {
+  width: 36px;
+  height: 36px;
+}
+
 /* Heading — one weight, one scale, tight tracking */
 .hero-title { margin: 0; max-width: 16ch; color: #f6fbf8; text-wrap: balance;
   font-size: clamp(2.4rem, 5.4vw, 4.1rem); font-weight: 600; line-height: 1.06; letter-spacing: -.025em; }

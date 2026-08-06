@@ -50,8 +50,13 @@ export function CampusExperience() {
 
       <div className="campus-hud">
         <div className="hud-brand">
-          <span className="hud-mark" aria-hidden="true" />
-          <span><strong>GreenMap</strong><small>IIT Bombay</small></span>
+      <img
+        src="/assets/suscell-logo.svg"
+        alt="Sustainability Cell IIT Bombay"
+        className="hud-logo"
+      />          
+        <span><strong>GreenMap</strong><small>Sustainability Cell, IIT Bombay</small></span>
+
         </div>
       </div>
     </section>

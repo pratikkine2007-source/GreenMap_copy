@@ -122,13 +122,16 @@ export function CampusGlobe({ onDescentStart, onDescentComplete }) {
       <div className={`hero-cover hero-cover--globe ${phase === 'intro' ? '' : 'is-lifting'}`} aria-hidden={phase !== 'intro'}>
         <div className="hero-content">
           <div className="hero-brand">
-            <span className="hero-mark" aria-hidden="true" />
-            <span className="hero-brand-text"><strong>GreenMap</strong><small>Sustainability Cell · IIT Bombay</small></span>
+      <img
+        src="/assets/suscell-logo.svg"
+        alt="Sustainability Cell IIT Bombay"
+        className="hero-logo"
+      />          
+        <span className="hero-brand-text"><strong>GreenMap</strong><small>Sustainability Cell · IIT Bombay</small></span>
           </div>
           <h1 className="hero-title">A <span className="hero-accent">greener</span> IIT&nbsp;Bombay, mapped.</h1>
           <p className="hero-sub">
-            A living 3D model of the campus — trace every solar array, water-reuse loop and
-            waste-to-energy plant, pinned exactly where it stands.
+            A digital gateway to IIT Bombay's sustainability initiatives - explore projects, infrastructure and impact across the campus.
           </p>
           <div className="hero-actions">
             <button type="button" className="hero-cta" onClick={beginDescent} disabled={!hasToken}>
