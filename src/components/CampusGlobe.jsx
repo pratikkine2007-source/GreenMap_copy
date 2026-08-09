@@ -39,6 +39,12 @@ export function CampusGlobe({ onDescentStart, onDescentComplete }) {
     setPhase('descending');
     onDescentStart?.();
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const duration = reduced ? 0 : 5;
+    const arrive = () => {
+      if (phaseRef.current === 'arrived') return;   // fire once
+      phaseRef.current = 'arrived';
+      onDescentComplete?.();
+    };
     viewer.camera.flyTo({
       // Land almost straight down over campus centre so the frame lines up with
       // the OpenStreetMap handoff view; the OSM map then tilts up into 3D.
@@ -48,9 +54,12 @@ export function CampusGlobe({ onDescentStart, onDescentComplete }) {
         pitch: CesiumMath.toRadians(-85),
         roll: 0,
       },
-      duration: reduced ? 0 : 6.2,
-      complete: () => { phaseRef.current = 'arrived'; onDescentComplete?.(); },
+      duration,
+      complete: arrive,
     });
+    // Safety net: if the flyTo `complete` callback never fires (e.g. the tab was
+    // throttled in the background), force the handoff shortly after it should end.
+    window.setTimeout(arrive, duration * 1000 + 900);
   }
 
   useEffect(() => {
@@ -131,13 +140,14 @@ export function CampusGlobe({ onDescentStart, onDescentComplete }) {
           </div>
           <h1 className="hero-title">A <span className="hero-accent">greener</span> IIT&nbsp;Bombay, mapped.</h1>
           <p className="hero-sub">
-            A digital gateway to IIT Bombay's sustainability initiatives - explore projects, infrastructure and impact across the campus.
+            Explore the sustainability initiatives across campus — energy, water, waste and the research driving them.
           </p>
           <div className="hero-actions">
             <button type="button" className="hero-cta" onClick={beginDescent} disabled={!hasToken}>
-              Enter the campus
+              Explore the map
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m0 0-5-5m5 5-5 5" /></svg>
             </button>
+            <span className="hero-hint">A short flight down to campus</span>
           </div>
         </div>
       </div>

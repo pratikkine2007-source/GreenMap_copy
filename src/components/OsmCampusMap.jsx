@@ -1,8 +1,10 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import campusBoundaryText from '../data/iitb-circular-boundary.geojson?raw';
 import { supabase } from '../lib/supabase';
+import { MapOverlay } from './map/MapOverlay';
+import { deriveThemes, resolveTheme } from '../map/categories';
 
 const campusBoundary = JSON.parse(campusBoundaryText);
 const campusRing = campusBoundary.features[0].geometry.coordinates[0];
@@ -67,6 +69,7 @@ function hideNonCampusLandmarks(map) {
   });
 }
 
+/** Original per-category pin colour + icon file (the teardrop marker look). */
 function markerVisual(category) {
   const key = String(category ?? '').toLowerCase();
   const visuals = {
@@ -83,76 +86,77 @@ function markerVisual(category) {
   return visuals[key] ?? { color: '#bd3455', file: 'default.svg' };
 }
 
-function makePopupContent(initiative) {
-  const content = document.createElement('article');
-  content.className = 'initiative-popup';
-  const category = document.createElement('p');
-  category.className = 'initiative-popup-category';
-  category.textContent = String(initiative.category ?? 'Sustainability initiative').replaceAll('_', ' ');
-  const title = document.createElement('h3');
-  title.textContent = initiative.title;
-  content.append(category, title);
-  if (initiative.image_url) {
-    const image = document.createElement('img');
-    image.src = initiative.image_url;
-    image.alt = initiative.title;
-    image.loading = 'lazy';
-    content.append(image);
-  }
-  if (initiative.description) {
-    const description = document.createElement('p');
-    description.textContent = initiative.description;
-    content.append(description);
-  }
-  if (initiative.image_stat) {
-    const stat = document.createElement('p');
-    stat.className = 'initiative-popup-impact';
-    stat.textContent = initiative.image_stat;
-    content.append(stat);
-  }
-  return content;
-}
-
-async function addInitiativeMarkers(map, markers) {
+/** Load published initiatives from Supabase, normalised for the overlay + markers. */
+async function loadInitiatives() {
   if (!supabase) throw new Error('Supabase environment variables are missing.');
+  // Select only columns known to exist; keep this resilient to schema drift.
   const { data, error } = await supabase.from('initiatives')
-    .select('title, category, longitude, latitude, description, image_url, image_stat')
+    .select('*')
     .eq('is_published', true);
   if (error) throw error;
-  const valid = data.filter((item) => Number.isFinite(Number(item.longitude)) && Number.isFinite(Number(item.latitude)));
-  valid.forEach((initiative) => {
-    const coordinates = [Number(initiative.longitude), Number(initiative.latitude)];
-    const element = document.createElement('button');
-    element.type = 'button';
-    element.className = 'sustainability-map-marker';
-    element.setAttribute('aria-label', `Show details for ${initiative.title}`);
-    const visual = markerVisual(initiative.category);
-    element.style.setProperty('--initiative-color', visual.color);
-    element.innerHTML = `<span class="marker-label">${initiative.title}</span><span class="marker-pin"><img src="/initiative-icons/${visual.file}" alt="" aria-hidden="true" /></span>`;
-    const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 20, maxWidth: '300px' })
-      .setLngLat(coordinates)
-      .setDOMContent(makePopupContent(initiative));
-    const marker = new maplibregl.Marker({ element, anchor: 'bottom', rotationAlignment: 'viewport', pitchAlignment: 'viewport' })
-      .setLngLat(coordinates)
-      .addTo(map);
-    element.addEventListener('mouseenter', () => popup.addTo(map));
-    element.addEventListener('mouseleave', () => popup.remove());
-    element.addEventListener('click', () => (popup.isOpen() ? popup.remove() : popup.addTo(map)));
-    markers.push({ marker, popup });
-  });
-  return valid.length;
+  return (data ?? [])
+    .filter((it) => Number.isFinite(Number(it.longitude)) && Number.isFinite(Number(it.latitude)))
+    .map((it, i) => ({
+      id: it.id ?? `${String(it.title ?? 'initiative').toLowerCase().replace(/\W+/g, '-')}-${i}`,
+      title: it.title,
+      category: it.category,
+      description: it.description,
+      image_url: it.image_url,
+      image_stat: it.image_stat,
+      // `location`/`building` are optional and only render if present in the row.
+      location: it.location ?? it.building ?? it.location_status,
+      lng: Number(it.longitude),
+      lat: Number(it.latitude),
+    }));
+}
+
+/** True when a coordinate falls within the padded campus bounding box. */
+function insideCampus(lng, lat) {
+  return lng >= CAMPUS_MAX_BOUNDS[0][0] && lng <= CAMPUS_MAX_BOUNDS[1][0]
+    && lat >= CAMPUS_MAX_BOUNDS[0][1] && lat <= CAMPUS_MAX_BOUNDS[1][1];
 }
 
 /**
- * The original OpenStreetMap (MapLibre) + Supabase campus map. It mounts
+ * The interactive OpenStreetMap (MapLibre) + Supabase campus map. It mounts
  * top-down (matching the Cesium descent's final frame), preloads quietly, and
- * once `active` turns true it tilts into the 3D view and locks to campus.
+ * once `active` turns true it tilts into the 3D view, locks to campus and drops
+ * the initiative markers. The React overlay (search, filters, controls, legend,
+ * detail) is layered above the canvas and drives the markers as a controlled UI.
  */
 export function OsmCampusMap({ active, onReady }) {
   const container = useRef(null);
   const mapRef = useRef(null);
+  const markersRef = useRef(new Map());       // id -> maplibregl.Marker
   const revealedRef = useRef(false);
 
+  const [initiatives, setInitiatives] = useState([]);
+  const [ready, setReady] = useState(false);  // markers may be dropped
+  const [activeCategory, setActiveCategory] = useState('all');
+  const [query, setQuery] = useState('');
+  const [selectedId, setSelectedId] = useState(null);
+  const [locating, setLocating] = useState(false);
+
+  const themes = useMemo(() => deriveThemes(initiatives), [initiatives]);
+  const selected = useMemo(
+    () => initiatives.find((it) => it.id === selectedId) ?? null,
+    [initiatives, selectedId],
+  );
+
+  // Keep a live ref to the selection setter so imperative marker handlers and
+  // map events always reach the latest state without recreating markers.
+  const selectRef = useRef(setSelectedId);
+  selectRef.current = setSelectedId;
+
+  /* ---- Load initiatives up front so they're ready by the time we reveal ---- */
+  useEffect(() => {
+    let cancelled = false;
+    loadInitiatives()
+      .then((data) => { if (!cancelled) setInitiatives(data); })
+      .catch((e) => console.error('Could not load initiatives:', e));
+    return () => { cancelled = true; };
+  }, []);
+
+  /* ---- Map setup (once) ---- */
   useEffect(() => {
     const map = new maplibregl.Map({
       container: container.current,
@@ -168,14 +172,14 @@ export function OsmCampusMap({ active, onReady }) {
       canvasContextAttributes: { antialias: true },
     });
     mapRef.current = map;
-    map.__markers = [];
 
-    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right');
     map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
     // Interaction is disabled until the reveal completes.
     ['dragPan', 'scrollZoom', 'boxZoom', 'dragRotate', 'keyboard', 'doubleClickZoom', 'touchZoomRotate']
       .forEach((h) => map[h].disable());
     map.getCanvas().style.cursor = 'default';
+    // Clicking empty map dismisses the open detail.
+    map.on('click', () => selectRef.current?.(null));
 
     const resizeObserver = new ResizeObserver(() => map.resize());
     resizeObserver.observe(container.current);
@@ -200,7 +204,6 @@ export function OsmCampusMap({ active, onReady }) {
         minzoom: 14.5,
         filter: ['!=', ['get', 'hide_3d'], true],
         paint: {
-          // Soft height-based shading reads more like a real city than a flat fill.
           'fill-extrusion-color': [
             'interpolate', ['linear'], ['coalesce', ['get', 'render_height'], 8],
             0, '#e9e3d6', 12, '#cfd3c2', 40, '#aeb6a4',
@@ -213,8 +216,6 @@ export function OsmCampusMap({ active, onReady }) {
 
       map.addSource('iitb-campus-boundary', { type: 'geojson', data: campusBoundary });
       map.addSource('outside-campus-mask', { type: 'geojson', data: outsideMask });
-      // Spotlight the campus: dim the surroundings instead of hiding them, so it
-      // reads as a real place with context rather than a cut-out.
       map.addLayer({
         id: 'outside-campus-mask',
         type: 'fill',
@@ -246,14 +247,15 @@ export function OsmCampusMap({ active, onReady }) {
     return () => {
       window.clearTimeout(readyFallback);
       resizeObserver.disconnect();
-      (map.__markers ?? []).forEach(({ marker, popup }) => { marker.remove(); popup.remove(); });
+      markersRef.current.forEach((marker) => marker.remove());
+      markersRef.current.clear();
       mapRef.current = null;
       map.remove();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Reveal: tilt from top-down into the 3D campus, then lock + drop markers.
+  /* ---- Reveal: tilt from top-down into the 3D campus, then lock ---- */
   useEffect(() => {
     const map = mapRef.current;
     if (!active || !map || revealedRef.current) return;
@@ -274,11 +276,120 @@ export function OsmCampusMap({ active, onReady }) {
       ['dragPan', 'scrollZoom', 'boxZoom', 'dragRotate', 'keyboard', 'doubleClickZoom', 'touchZoomRotate']
         .forEach((h) => map[h].enable());
       map.getCanvas().style.cursor = '';
-      const markers = map.__markers ?? [];
-      addInitiativeMarkers(map, markers).catch((e) => console.error('Could not load initiatives:', e));
+      setReady(true);
     }, reduced ? 0 : 2050);
     return () => window.clearTimeout(settle);
   }, [active]);
 
-  return <div ref={container} className="osm-map-layer" aria-label="Interactive 3D map of IIT Bombay campus" />;
+  /* ---- Create markers once the map is revealed and data has loaded ---- */
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready || initiatives.length === 0 || markersRef.current.size > 0) return;
+    initiatives.forEach((it) => {
+      const visual = markerVisual(it.category);
+      const el = document.createElement('button');
+      el.type = 'button';
+      el.className = 'sustainability-map-marker';
+      el.style.setProperty('--initiative-color', visual.color);
+      el.setAttribute('aria-label', `Show details for ${it.title}`);
+      const label = document.createElement('span');
+      label.className = 'marker-label';
+      label.textContent = it.title;
+      const pin = document.createElement('span');
+      pin.className = 'marker-pin';
+      const img = document.createElement('img');
+      img.src = `/initiative-icons/${visual.file}`;
+      img.alt = '';
+      img.setAttribute('aria-hidden', 'true');
+      pin.append(img);
+      el.append(label, pin);
+      el.addEventListener('click', (e) => { e.stopPropagation(); selectRef.current?.(it.id); });
+      const marker = new maplibregl.Marker({ element: el, anchor: 'bottom', rotationAlignment: 'viewport', pitchAlignment: 'viewport' })
+        .setLngLat([it.lng, it.lat])
+        .addTo(map);
+      markersRef.current.set(it.id, marker);
+    });
+  }, [ready, initiatives]);
+
+  /* ---- Apply filter / search / selection to the markers ---- */
+  useEffect(() => {
+    const q = query.trim().toLowerCase();
+    markersRef.current.forEach((marker, id) => {
+      const it = initiatives.find((x) => x.id === id);
+      if (!it) return;
+      const el = marker.getElement();
+      const inCat = activeCategory === 'all' || resolveTheme(it.category).id === activeCategory;
+      const inQ = !q || `${it.title} ${it.category} ${it.location ?? ''}`.toLowerCase().includes(q);
+      // The selected marker always stays visible so the detail never orphans.
+      const visible = (inCat && inQ) || id === selectedId;
+      el.classList.toggle('is-hidden', !visible);
+      el.classList.toggle('is-selected', id === selectedId);
+    });
+  }, [activeCategory, query, selectedId, initiatives]);
+
+  /* ---- Fly to the selected initiative, clearing the panel/sheet ---- */
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !selected) return;
+    const isMobile = window.matchMedia('(max-width: 760px)').matches;
+    const offset = isMobile ? [0, -150] : [-110, 0];
+    map.easeTo({
+      center: [selected.lng, selected.lat],
+      zoom: Math.max(map.getZoom(), 16.4),
+      offset,
+      duration: 700,
+      easing: (t) => 1 - Math.pow(1 - t, 3),
+    });
+  }, [selected]);
+
+  /* ---- Overlay controls ---- */
+  const handleControl = useCallback((action) => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (action === 'zoom-in') map.zoomIn();
+    else if (action === 'zoom-out') map.zoomOut();
+    else if (action === 'reset') {
+      setActiveCategory('all'); setQuery(''); setSelectedId(null);
+      map.easeTo({ center: IITB_CENTER, zoom: ARRIVED.zoom, pitch: ARRIVED.pitch, bearing: ARRIVED.bearing, duration: 900, easing: (t) => 1 - Math.pow(1 - t, 3) });
+    } else if (action === 'locate') {
+      if (!navigator.geolocation) return;
+      setLocating(true);
+      navigator.geolocation.getCurrentPosition(
+        ({ coords }) => {
+          setLocating(false);
+          const { longitude, latitude } = coords;
+          if (insideCampus(longitude, latitude)) {
+            map.easeTo({ center: [longitude, latitude], zoom: 16.6, duration: 900 });
+          } else {
+            // Off campus — just recentre on IITB rather than leaving the bounds.
+            map.easeTo({ center: IITB_CENTER, zoom: ARRIVED.zoom, duration: 900 });
+          }
+        },
+        () => setLocating(false),
+        { enableHighAccuracy: true, timeout: 8000 },
+      );
+    }
+  }, []);
+
+  const handleSelect = useCallback((it) => setSelectedId(it ? it.id : null), []);
+
+  return (
+    <>
+      <div ref={container} className="osm-map-layer" aria-label="Interactive 3D map of IIT Bombay campus" />
+      {ready && (
+        <MapOverlay
+          initiatives={initiatives}
+          themes={themes}
+          activeCategory={activeCategory}
+          onCategoryChange={(id) => { setActiveCategory(id); }}
+          query={query}
+          onQueryChange={setQuery}
+          selected={selected}
+          onSelect={handleSelect}
+          onControl={handleControl}
+          locating={locating}
+        />
+      )}
+    </>
+  );
 }

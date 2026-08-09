@@ -12,10 +12,12 @@ import { OsmCampusMap } from './OsmCampusMap';
  * the globe blurs out, the OSM map tilts up into 3D — one continuous move.
  */
 export function CampusExperience() {
-  const [phase, setPhase] = useState('intro'); // intro | descending | map
-  const [cesiumGone, setCesiumGone] = useState(false);
-  const descentDone = useRef(false);
-  const osmReady = useRef(false);
+  // `?map` deep-links straight to the interactive map, skipping the flyover.
+  const skipIntro = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('map');
+  const [phase, setPhase] = useState(skipIntro ? 'map' : 'intro'); // intro | descending | map
+  const [cesiumGone, setCesiumGone] = useState(skipIntro);
+  const descentDone = useRef(skipIntro);
+  const osmReady = useRef(skipIntro);
 
   const maybeHandoff = useCallback(() => {
     if (!descentDone.current || !osmReady.current) return;
@@ -49,15 +51,14 @@ export function CampusExperience() {
       )}
 
       <div className="campus-hud">
-        <div className="hud-brand">
-      <img
-        src="/assets/suscell-logo.svg"
-        alt="Sustainability Cell IIT Bombay"
-        className="hud-logo"
-      />          
-        <span><strong>GreenMap</strong><small>Sustainability Cell, IIT Bombay</small></span>
-
-        </div>
+        <a className="hud-brand" href={import.meta.env.BASE_URL || '/'} aria-label="GreenMap — back to home">
+          <img
+            src="/assets/suscell-logo.svg"
+            alt="Sustainability Cell IIT Bombay"
+            className="hud-logo"
+          />
+          <span><strong>GreenMap</strong><small>Sustainability Cell, IIT Bombay</small></span>
+        </a>
       </div>
     </section>
   );
