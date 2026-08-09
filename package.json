@@ -12,6 +12,7 @@
     "@supabase/supabase-js": "latest",
     "@vitejs/plugin-react": "latest",
     "cesium": "^1.144.0",
+    "gsap": "^3.15.0",
     "leaflet": "latest",
     "maplibre-gl": "latest",
     "react": "latest",

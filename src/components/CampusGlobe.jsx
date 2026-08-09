@@ -140,14 +140,13 @@ export function CampusGlobe({ onDescentStart, onDescentComplete }) {
           </div>
           <h1 className="hero-title">A <span className="hero-accent">greener</span> IIT&nbsp;Bombay, mapped.</h1>
           <p className="hero-sub">
-            Explore the sustainability initiatives across campus — energy, water, waste and the research driving them.
+            Explore the projects making campus more sustainable — clean energy, water, waste and the research behind them.
           </p>
           <div className="hero-actions">
             <button type="button" className="hero-cta" onClick={beginDescent} disabled={!hasToken}>
               Explore the map
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m0 0-5-5m5 5-5 5" /></svg>
             </button>
-            <span className="hero-hint">A short flight down to campus</span>
           </div>
         </div>
       </div>

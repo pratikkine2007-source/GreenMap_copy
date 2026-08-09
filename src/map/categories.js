@@ -12,18 +12,17 @@
  */
 
 // Lucide-derived single-stroke glyphs (inner markup only).
+// Exact Lucide icon geometry (viewBox 24, 2px round stroke) — crisp at badge size.
 const ICONS = {
-  // Refreshed, more distinctive category glyphs. Drawn to read cleanly at badge
-  // size, on a solid colour tile with a dark stroke.
-  droplet: '<path d="M12 3c3.4 4.4 5.4 7.3 5.4 10.2a5.4 5.4 0 0 1-10.8 0C6.6 10.3 8.6 7.4 12 3Z"/><path d="M9.7 13.4c.2 1.2 1 2 2.2 2.2"/>',
-  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.6v2.4M12 19v2.4M4.7 4.7l1.7 1.7M17.6 17.6l1.7 1.7M2.6 12h2.4M19 12h2.4M4.7 19.3l1.7-1.7M17.6 6.4l1.7-1.7"/>',
-  recycle: '<path d="M8.9 5.6 11 2.9a1.3 1.3 0 0 1 2.1 0l2.3 3.5"/><path d="m15.4 6.4 3.9.1a1.3 1.3 0 0 1 1.1 2l-1.4 2.4"/><path d="M15 21h4.3M9.1 21H5.6a1.3 1.3 0 0 1-1.1-2l1.9-3.3"/><path d="m6.4 15.7-2.5 1.4M17 21l-2.3-1.3 2.3-1.3M14.2 6.9 12 3"/>',
-  building: '<rect x="6" y="3" width="12" height="18" rx="1.5"/><path d="M4 21h16"/><path d="M9.5 7h.01M14.5 7h.01M9.5 11h.01M14.5 11h.01M9.5 15h.01M14.5 15h.01"/><path d="M10.5 21v-3h3v3"/>',
-  flask: '<path d="M9 3h6M10 3v5.8L5.4 16.8a2 2 0 0 0 1.7 3h9.8a2 2 0 0 0 1.7-3L14 8.8V3"/><path d="M8 15h8"/>',
-  bike: '<circle cx="6" cy="17" r="3.2"/><circle cx="18" cy="17" r="3.2"/><path d="M6 17 10 8h4l2 4M9 8h5.5M14.5 8l1.5 3.5"/>',
-  leaf: '<path d="M11 20A7 7 0 0 1 4 13c0-5 4.5-8.5 15-9-.5 9.5-4 14-11 14Z"/><path d="M4 21c4-5 7.5-7.5 12-9"/>',
-  wheat: '<path d="M12 21V9"/><path d="M12 9c0-2.5-1.5-4-3.5-4C8.5 7.5 10 9 12 9ZM12 9c0-2.5 1.5-4 3.5-4C15.5 7.5 14 9 12 9ZM12 14c0-2.5-1.5-4-3.5-4C8.5 12.5 10 14 12 14ZM12 14c0-2.5 1.5-4 3.5-4C15.5 12.5 14 14 12 14Z"/>',
-  compass: '<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5 5-2Z"/>',
+  droplet: '<path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>',
+  zap: '<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>',
+  recycle: '<path d="M7 19H4.815a1.83 1.83 0 0 1-1.57-.881 1.785 1.785 0 0 1-.004-1.784L7.196 9.5"/><path d="M11 19h8.203a1.83 1.83 0 0 0 1.556-.89 1.784 1.784 0 0 0 0-1.775l-1.226-2.12"/><path d="m14 16-3 3 3 3"/><path d="M8.293 13.596 7.196 9.5 3.1 10.598"/><path d="m9.344 5.811 1.093-1.892A1.83 1.83 0 0 1 11.985 3a1.784 1.784 0 0 1 1.546.888l3.943 6.843"/><path d="m13.378 9.633 4.096 1.098 1.097-4.096"/>',
+  building: '<path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/>',
+  flask: '<path d="M14 2v6a2 2 0 0 0 .245.96l5.51 10.08A2 2 0 0 1 18 22H6a2 2 0 0 1-1.755-2.96l5.51-10.08A2 2 0 0 0 10 8V2"/><path d="M6.453 15h11.094"/><path d="M8.5 2h7"/>',
+  bike: '<circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/>',
+  leaf: '<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>',
+  wheat: '<path d="M2 22 16 8"/><path d="M3.47 12.53 5 11l1.53 1.53a3.5 3.5 0 0 1 0 4.94L5 19l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M7.47 8.53 9 7l1.53 1.53a3.5 3.5 0 0 1 0 4.94L9 15l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M11.47 4.53 13 3l1.53 1.53a3.5 3.5 0 0 1 0 4.94L13 11l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/>',
+  compass: '<circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>',
 };
 
 /**
@@ -32,7 +31,7 @@ const ICONS = {
  */
 export const THEMES = {
   water: { id: 'water', label: 'Water', color: '#4FC4E4', icon: ICONS.droplet, blurb: 'Conservation & reuse', order: 1 },
-  energy: { id: 'energy', label: 'Energy', color: '#F0B43E', icon: ICONS.sun, blurb: 'Renewables & efficiency', order: 2 },
+  energy: { id: 'energy', label: 'Energy', color: '#F0B43E', icon: ICONS.zap, blurb: 'Renewables & efficiency', order: 2 },
   waste: { id: 'waste', label: 'Waste', color: '#5FD08A', icon: ICONS.recycle, blurb: 'Recovery & composting', order: 3 },
   buildings: { id: 'buildings', label: 'Buildings', color: '#8FC2A0', icon: ICONS.building, blurb: 'Green-rated infrastructure', order: 4 },
   research: { id: 'research', label: 'Research', color: '#A99BF2', icon: ICONS.flask, blurb: 'Carbon & sustainability labs', order: 5 },

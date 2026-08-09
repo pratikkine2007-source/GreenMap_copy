@@ -331,8 +331,10 @@ export function OsmCampusMap({ active, onReady }) {
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !selected) return;
+    // Keep the marker clear of the UI: left of the right-side card on desktop,
+    // above the bottom sheet on mobile.
     const isMobile = window.matchMedia('(max-width: 760px)').matches;
-    const offset = isMobile ? [0, -150] : [-110, 0];
+    const offset = isMobile ? [0, -170] : [-140, 0];
     map.easeTo({
       center: [selected.lng, selected.lat],
       zoom: Math.max(map.getZoom(), 16.4),

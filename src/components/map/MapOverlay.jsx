@@ -2,7 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { resolveTheme, prettyCategory } from '../../map/categories';
 import {
   CategoryGlyph, IconSearch, IconClose, IconPlus, IconMinus,
-  IconLocate, IconReset, IconChevron, IconLayers, IconGrid,
+  IconLocate, IconReset, IconGrid,
 } from './icons';
 import { InitiativeDetail } from './InitiativeDetail';
 
@@ -164,41 +164,12 @@ function MapControls({ onControl, locating }) {
   );
 }
 
-/* ---------- Legend ---------- */
-function Legend({ themes, active, onChange }) {
-  const [collapsed, setCollapsed] = useState(false);
-  const total = themes.reduce((sum, t) => sum + (t.count ?? 0), 0);
-  return (
-    <div className={`gm-legend ${collapsed ? 'is-collapsed' : ''}`}>
-      <button type="button" className="gm-legend__head" onClick={() => setCollapsed((c) => !c)} aria-expanded={!collapsed}>
-        <IconLayers />
-        <span className="gm-legend__title">Categories</span>
-        <span className="gm-legend__total">{total}</span>
-        <IconChevron className="gm-legend__chev" />
-      </button>
-      <div className="gm-legend__body">
-        {themes.map((t) => (
-          <button
-            key={t.id} type="button"
-            className={`gm-legend__row ${active === t.id ? 'is-active' : ''} ${active !== 'all' && active !== t.id ? 'is-mute' : ''}`}
-            style={{ '--cat': t.color }}
-            onClick={() => onChange(active === t.id ? 'all' : t.id)}
-          >
-            <span className="gm-glyph gm-glyph--22"><CategoryGlyph theme={t} /></span>
-            <span className="gm-legend__name">{t.label}</span>
-            <span className="gm-legend__n">{t.count}</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 /**
- * Full overlay layer for the campus map: search, filters, controls, legend and
+ * Full overlay layer for the campus map: search, category filters, controls and
  * the selected-initiative detail. Presentational + transient UI state only;
  * data, active category, query and selection are owned by the parent so the
- * MapLibre markers stay the single source of truth.
+ * MapLibre markers stay the single source of truth. (The filter row doubles as
+ * the category key, so there is no separate legend.)
  */
 export function MapOverlay({
   initiatives, themes, activeCategory, onCategoryChange,
@@ -219,9 +190,9 @@ export function MapOverlay({
       </div>
 
       <MapControls onControl={onControl} locating={locating} />
-      {themes.length > 0 && <Legend themes={themes} active={activeCategory} onChange={onCategoryChange} />}
 
-      <InitiativeDetail initiative={selected} onClose={() => onSelect(null)} />
+      {/* GSAP-managed presence; floating side card / bottom sheet. */}
+      <InitiativeDetail selected={selected} onClose={() => onSelect(null)} />
     </div>
   );
 }
