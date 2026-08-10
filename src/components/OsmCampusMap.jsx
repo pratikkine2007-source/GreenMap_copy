@@ -73,15 +73,15 @@ function hideNonCampusLandmarks(map) {
 function markerVisual(category) {
   const key = String(category ?? '').toLowerCase();
   const visuals = {
-    water_conservation: { color: '#25829c', file: 'water-conservation.svg' },
-    water_reuse: { color: '#25829c', file: 'water-reuse.svg' },
-    renewable_energy: { color: '#d88918', file: 'renewable-energy.svg' },
-    waste_management: { color: '#5f913e', file: 'waste-management.svg' },
-    waste_to_energy: { color: '#a85d31', file: 'waste-to-energy.svg' },
-    green_buildings: { color: '#487a50', file: 'green-buildings.svg' },
-    energy_efficiency: { color: '#7a5aa6', file: 'energy-efficiency.svg' },
-    carbon_research: { color: '#5469a8', file: 'carbon-research.svg' },
-    sustainability_research: { color: '#326f71', file: 'sustainability-research.svg' },
+    water_conservation: { color: '#0040B7', file: 'water-conservation.svg' },
+    water_reuse: { color: '#0040B7', file: 'water-reuse.svg' },
+    renewable_energy: { color: '#FFBF3F', file: 'renewable-energy.svg' },
+    waste_management: { color: '#326f71', file: 'waste-management.svg' },
+    waste_to_energy: { color: '#FF7824', file: 'waste-to-energy.svg' },
+    green_buildings: { color: '#326f71', file: 'green-buildings.svg' },
+    energy_efficiency: { color: '#FF48A0', file: 'energy-efficiency.svg' },
+    carbon_research: { color: '#8900B4', file: 'carbon-research.svg' },
+    sustainability_research: { color: '#8900B4', file: 'sustainability-research.svg' },
   };
   return visuals[key] ?? { color: '#bd3455', file: 'default.svg' };
 }
