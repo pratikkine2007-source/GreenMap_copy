@@ -140,7 +140,7 @@ export function CampusGlobe({ onDescentStart, onDescentComplete }) {
           </div>
           <h1 className="hero-title">A <span className="hero-accent">greener</span> IIT&nbsp;Bombay, mapped.</h1>
           <p className="hero-sub">
-            Explore the projects making campus more sustainable — clean energy, water, waste and the research behind them.
+            Explore the projects making campus more sustainable - clean energy, water, waste and the research behind them.
           </p>
           <div className="hero-actions">
             <button type="button" className="hero-cta" onClick={beginDescent} disabled={!hasToken}>
