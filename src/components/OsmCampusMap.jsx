@@ -42,17 +42,45 @@ const majorCampusPoiFilter = [
   ['match', ['get', 'subclass'], ['university', 'college', 'library', 'hospital', 'hostel', 'sports_centre', 'guest_house'], true, false],
   ['in', ['get', 'name'], ['literal', MAJOR_LANDMARK_NAMES]],
 ];
-const outsideMask = {
-  type: 'Feature',
-  properties: {},
-  geometry: {
-    type: 'Polygon',
-    coordinates: [
-      [[70, 17], [75, 17], [75, 22], [70, 22], [70, 17]],
-      [...campusRing].reverse(),
-    ],
-  },
-};
+// Multiple rings replace the old hard mask. Their increasing opacity creates a
+// gentle falloff from the clear campus to the subdued surrounding map.
+function expandRing(ring, factor) {
+  return ring.map(([lng, lat]) => [
+    IITB_CENTER[0] + (lng - IITB_CENTER[0]) * factor,
+    IITB_CENTER[1] + (lat - IITB_CENTER[1]) * factor,
+  ]);
+}
+
+function createOutsideGradient(ring) {
+  const bands = [
+    { factor: 1.035, opacity: 0.06 },
+    { factor: 1.09, opacity: 0.12 },
+    { factor: 1.20, opacity: 0.22 },
+  ];
+  const features = [];
+  let inner = ring;
+  bands.forEach(({ factor, opacity }) => {
+    const outer = expandRing(ring, factor);
+    features.push({
+      type: 'Feature', properties: { opacity },
+      geometry: { type: 'Polygon', coordinates: [outer, [...inner].reverse()] },
+    });
+    inner = outer;
+  });
+  features.push({
+    type: 'Feature', properties: { opacity: 0.40 },
+    geometry: {
+      type: 'Polygon',
+      coordinates: [
+        [[70, 17], [75, 17], [75, 22], [70, 22], [70, 17]],
+        [...inner].reverse(),
+      ],
+    },
+  });
+  return { type: 'FeatureCollection', features };
+}
+
+const outsideGradient = createOutsideGradient(campusRing);
 
 function hideNonCampusLandmarks(map) {
   const hiddenTerms = ['bus', 'transit', 'public_transport', 'rail', 'aeroway', 'traffic', 'housenumber', 'shop', 'atm', 'bank', 'cafe', 'restaurant', 'fast_food', 'viewpoint'];
@@ -65,6 +93,36 @@ function hideNonCampusLandmarks(map) {
     }
     if (layer.type === 'symbol' && hiddenTerms.some((term) => identity.includes(term))) {
       map.setLayoutProperty(layer.id, 'visibility', 'none');
+    }
+  });
+}
+
+/** Apply the campus colour system to the OpenFreeMap base-style layers. */
+function applyCampusPalette(map) {
+  const colours = {
+    water: '#72CAEB',
+    greenery: '#95E0B7',
+    builtUp: '#BEC6CE',
+    road: '#EFE5CE',
+    roadBorder: '#D4D8DC',
+  };
+
+  (map.getStyle().layers ?? []).forEach((layer) => {
+    const identity = `${layer.id} ${layer['source-layer'] ?? ''}`.toLowerCase();
+    const isWater = /water|waterway/.test(identity);
+    const isGreenery = /park|green|landcover|landuse|wood|forest|grass|garden|cemetery/.test(identity);
+    const isBuilding = /building/.test(identity);
+    const isRoad = /road|street|highway|transportation/.test(identity);
+    const isRoadBorder = /casing|border|outline/.test(identity);
+
+    try {
+      if (layer.type === 'fill' && isWater) map.setPaintProperty(layer.id, 'fill-color', colours.water);
+      if (layer.type === 'line' && isWater) map.setPaintProperty(layer.id, 'line-color', colours.water);
+      if (layer.type === 'fill' && isGreenery) map.setPaintProperty(layer.id, 'fill-color', colours.greenery);
+      if (layer.type === 'fill' && isBuilding) map.setPaintProperty(layer.id, 'fill-color', colours.builtUp);
+      if (layer.type === 'line' && isRoad) map.setPaintProperty(layer.id, 'line-color', isRoadBorder ? colours.roadBorder : colours.road);
+    } catch (error) {
+      // Some provider layers do not expose a colour paint property; leave them intact.
     }
   });
 }
@@ -173,7 +231,7 @@ export function OsmCampusMap({ active, onReady }) {
     });
     mapRef.current = map;
 
-    map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
+    map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
     // Interaction is disabled until the reveal completes.
     ['dragPan', 'scrollZoom', 'boxZoom', 'dragRotate', 'keyboard', 'doubleClickZoom', 'touchZoomRotate']
       .forEach((h) => map[h].disable());
@@ -193,6 +251,7 @@ export function OsmCampusMap({ active, onReady }) {
       if (!style?.layers?.length) return;
       didSetup = true;
       try { hideNonCampusLandmarks(map); } catch (e) { console.warn('Campus label filtering skipped:', e); }
+      try { applyCampusPalette(map); } catch (e) { console.warn('Campus colour palette skipped:', e); }
       const labelLayer = map.getStyle().layers?.find((l) => l.type === 'symbol' && l.layout?.['text-field'])?.id;
 
       map.addSource('osm-buildings', { type: 'vector', url: 'https://tiles.openfreemap.org/planet' });
@@ -204,35 +263,19 @@ export function OsmCampusMap({ active, onReady }) {
         minzoom: 14.5,
         filter: ['!=', ['get', 'hide_3d'], true],
         paint: {
-          'fill-extrusion-color': [
-            'interpolate', ['linear'], ['coalesce', ['get', 'render_height'], 8],
-            0, '#e9e3d6', 12, '#cfd3c2', 40, '#aeb6a4',
-          ],
+          'fill-extrusion-color': '#BEC6CE',
           'fill-extrusion-height': ['interpolate', ['linear'], ['zoom'], 14.5, 0, 16, ['*', ['coalesce', ['get', 'render_height'], 8], 1.7]],
           'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0],
-          'fill-extrusion-opacity': 0.92,
+          'fill-extrusion-opacity': 0.95,
         },
       }, labelLayer);
 
-      map.addSource('iitb-campus-boundary', { type: 'geojson', data: campusBoundary });
-      map.addSource('outside-campus-mask', { type: 'geojson', data: outsideMask });
+      map.addSource('outside-campus-gradient', { type: 'geojson', data: outsideGradient });
       map.addLayer({
-        id: 'outside-campus-mask',
+        id: 'outside-campus-gradient',
         type: 'fill',
-        source: 'outside-campus-mask',
-        paint: { 'fill-color': '#06140f', 'fill-opacity': 0.55 },
-      });
-      map.addLayer({
-        id: 'iitb-campus-glow',
-        type: 'line',
-        source: 'iitb-campus-boundary',
-        paint: { 'line-color': '#8ff0b8', 'line-width': 8, 'line-blur': 7, 'line-opacity': 0.6 },
-      });
-      map.addLayer({
-        id: 'iitb-campus-outline',
-        type: 'line',
-        source: 'iitb-campus-boundary',
-        paint: { 'line-color': '#4bf39c', 'line-width': 2.2, 'line-opacity': 0.95 },
+        source: 'outside-campus-gradient',
+        paint: { 'fill-color': '#0b2516', 'fill-opacity': ['get', 'opacity'] },
       });
     };
     map.on('styledata', setupCampus);

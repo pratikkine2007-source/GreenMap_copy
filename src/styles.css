@@ -117,11 +117,12 @@ h1 { margin-bottom: 10px; font-size: clamp(2rem, 5vw, 3.6rem); line-height: 1; }
 .osm-map-layer .maplibregl-ctrl-top-right,
 .osm-map-layer .maplibregl-ctrl-top-left,
 .osm-map-layer .maplibregl-ctrl-bottom-right .maplibregl-ctrl-group { display: none; }
-.osm-map-layer .maplibregl-ctrl-bottom-left { margin: 0 0 10px 12px; }
+.osm-map-layer .maplibregl-ctrl-bottom-right { margin: 0 12px 10px 0; }
 .osm-map-layer .maplibregl-ctrl-attrib {
-  background: var(--gm-surface); color: var(--gm-text-mute); border-radius: var(--gm-r-pill);
-  padding: 2px 10px; font-size: 10px; backdrop-filter: blur(8px); border: 1px solid var(--gm-hairline);
+  background: color-mix(in srgb, var(--gm-surface) 72%, transparent); color: var(--gm-text-mute); border-radius: var(--gm-r-pill);
+  padding: 1px 7px; font-size: 9px; opacity: .62; backdrop-filter: blur(8px); border: 1px solid color-mix(in srgb, var(--gm-hairline) 65%, transparent);
 }
+.osm-map-layer .maplibregl-ctrl-attrib:hover { opacity: .9; }
 .osm-map-layer .maplibregl-ctrl-attrib a { color: var(--gm-text-soft); }
 .campus-experience:not(.is-map) .osm-map-layer .maplibregl-ctrl { opacity: 0; pointer-events: none; }
 .osm-map-layer .maplibregl-ctrl-attrib { transition: opacity 700ms ease .4s; }
