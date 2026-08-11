@@ -140,7 +140,7 @@ function CategoryFilter({ themes, active, onChange, total }) {
           style={{ '--cat': t.color }}
           onClick={() => onChange(active === t.id ? 'all' : t.id)}
         >
-          <span className="gm-chip__dot" />
+          <span className="gm-chip__glyph"><CategoryGlyph theme={t} /></span>
           {t.label}<span className="gm-chip__count">{t.count}</span>
         </button>
       ))}

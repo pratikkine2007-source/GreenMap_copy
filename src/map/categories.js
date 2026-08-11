@@ -30,11 +30,11 @@ const ICONS = {
  * for legibility on the dark map (roughly equal luminance, restrained saturation).
  */
 export const THEMES = {
-  water: { id: 'water', label: 'Water', color: '#4FC4E4', icon: ICONS.droplet, blurb: 'Conservation & reuse', order: 1 },
-  energy: { id: 'energy', label: 'Energy', color: '#F0B43E', icon: ICONS.zap, blurb: 'Renewables & efficiency', order: 2 },
-  waste: { id: 'waste', label: 'Waste', color: '#5FD08A', icon: ICONS.recycle, blurb: 'Recovery & composting', order: 3 },
-  buildings: { id: 'buildings', label: 'Buildings', color: '#8FC2A0', icon: ICONS.building, blurb: 'Green-rated infrastructure', order: 4 },
-  research: { id: 'research', label: 'Research', color: '#A99BF2', icon: ICONS.flask, blurb: 'Carbon & sustainability labs', order: 5 },
+  water: { id: 'water', label: 'Water', color: '#4FC4E4', icon: ICONS.droplet, cardIcon: '/initiative-icons/water.svg', blurb: 'Conservation & reuse', order: 1 },
+  energy: { id: 'energy', label: 'Energy', color: '#F0B43E', icon: ICONS.zap, cardIcon: '/initiative-icons/energy.svg', blurb: 'Renewables & efficiency', order: 2 },
+  waste: { id: 'waste', label: 'Waste', color: '#5FD08A', icon: ICONS.recycle, cardIcon: '/initiative-icons/waste.svg', blurb: 'Recovery & composting', order: 3 },
+  buildings: { id: 'buildings', label: 'Buildings', color: '#8FC2A0', icon: ICONS.building, cardIcon: '/initiative-icons/buildings.svg', blurb: 'Green-rated infrastructure', order: 4 },
+  research: { id: 'research', label: 'Research', color: '#A99BF2', icon: ICONS.flask, cardIcon: '/initiative-icons/research.svg', blurb: 'Carbon & sustainability labs', order: 5 },
   mobility: { id: 'mobility', label: 'Mobility', color: '#F28D5C', icon: ICONS.bike, blurb: 'Low-carbon transport', order: 6 },
   biodiversity: { id: 'biodiversity', label: 'Biodiversity', color: '#76D68C', icon: ICONS.leaf, blurb: 'Green cover & habitats', order: 7 },
   food: { id: 'food', label: 'Food', color: '#EC9DC1', icon: ICONS.wheat, blurb: 'Sustainable dining', order: 8 },
