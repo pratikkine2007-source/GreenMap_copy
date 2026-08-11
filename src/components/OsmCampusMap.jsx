@@ -42,46 +42,6 @@ const majorCampusPoiFilter = [
   ['match', ['get', 'subclass'], ['university', 'college', 'library', 'hospital', 'hostel', 'sports_centre', 'guest_house'], true, false],
   ['in', ['get', 'name'], ['literal', MAJOR_LANDMARK_NAMES]],
 ];
-// Multiple rings replace the old hard mask. Their increasing opacity creates a
-// gentle falloff from the clear campus to the subdued surrounding map.
-function expandRing(ring, factor) {
-  return ring.map(([lng, lat]) => [
-    IITB_CENTER[0] + (lng - IITB_CENTER[0]) * factor,
-    IITB_CENTER[1] + (lat - IITB_CENTER[1]) * factor,
-  ]);
-}
-
-function createOutsideGradient(ring) {
-  const bands = [
-    { factor: 1.035, opacity: 0.06 },
-    { factor: 1.09, opacity: 0.12 },
-    { factor: 1.20, opacity: 0.22 },
-  ];
-  const features = [];
-  let inner = ring;
-  bands.forEach(({ factor, opacity }) => {
-    const outer = expandRing(ring, factor);
-    features.push({
-      type: 'Feature', properties: { opacity },
-      geometry: { type: 'Polygon', coordinates: [outer, [...inner].reverse()] },
-    });
-    inner = outer;
-  });
-  features.push({
-    type: 'Feature', properties: { opacity: 0.40 },
-    geometry: {
-      type: 'Polygon',
-      coordinates: [
-        [[70, 17], [75, 17], [75, 22], [70, 22], [70, 17]],
-        [...inner].reverse(),
-      ],
-    },
-  });
-  return { type: 'FeatureCollection', features };
-}
-
-const outsideGradient = createOutsideGradient(campusRing);
-
 function hideNonCampusLandmarks(map) {
   const hiddenTerms = ['bus', 'transit', 'public_transport', 'rail', 'aeroway', 'traffic', 'housenumber', 'shop', 'atm', 'bank', 'cafe', 'restaurant', 'fast_food', 'viewpoint'];
   (map.getStyle().layers ?? []).forEach((layer) => {
@@ -270,13 +230,6 @@ export function OsmCampusMap({ active, onReady }) {
         },
       }, labelLayer);
 
-      map.addSource('outside-campus-gradient', { type: 'geojson', data: outsideGradient });
-      map.addLayer({
-        id: 'outside-campus-gradient',
-        type: 'fill',
-        source: 'outside-campus-gradient',
-        paint: { 'fill-color': '#0b2516', 'fill-opacity': ['get', 'opacity'] },
-      });
     };
     map.on('styledata', setupCampus);
     setupCampus();

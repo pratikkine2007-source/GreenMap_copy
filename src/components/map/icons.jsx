@@ -19,6 +19,15 @@ export const IconGrid = (p) => svg(<><rect x="3" y="3" width="7" height="7" rx="
 /** Render a category theme's inline-SVG glyph (trusted, from our registry). */
 export function CategoryGlyph({ theme, className }) {
   if (!theme) return null;
+  if (theme.cardIcon) {
+    return (
+      <span
+        className={`gm-category-asset ${className ?? ''}`}
+        style={{ '--category-icon': `url(${theme.cardIcon})` }}
+        aria-hidden="true"
+      />
+    );
+  }
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
       strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true"
