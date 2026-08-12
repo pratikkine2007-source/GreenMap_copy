@@ -221,7 +221,12 @@ export function OsmCampusMap({ active, onReady }) {
         source: 'osm-buildings',
         'source-layer': 'building',
         minzoom: 14.5,
-        filter: ['!=', ['get', 'hide_3d'], true],
+        // Drop buildings with corrupt/absurd heights (e.g. the ~needle spike near
+        // Tirandaz Village); real campus buildings are well under 100m.
+        filter: ['all',
+          ['!=', ['get', 'hide_3d'], true],
+          ['<', ['coalesce', ['get', 'render_height'], 8], 100],
+        ],
         paint: {
           'fill-extrusion-color': '#BEC6CE',
           'fill-extrusion-height': ['interpolate', ['linear'], ['zoom'], 14.5, 0, 16, ['*', ['coalesce', ['get', 'render_height'], 8], 1.7]],
@@ -376,6 +381,7 @@ export function OsmCampusMap({ active, onReady }) {
       <div ref={container} className="osm-map-layer" aria-label="Interactive 3D map of IIT Bombay campus" />
       {ready && (
         <MapOverlay
+          map={mapRef.current}
           initiatives={initiatives}
           themes={themes}
           activeCategory={activeCategory}

@@ -66,7 +66,7 @@ function SearchBar({ initiatives, themes, query, onQueryChange, onPickInitiative
           ref={inputRef}
           type="text"
           value={query}
-          placeholder="Search initiatives, buildings, categories"
+          placeholder="Search initiatives"
           aria-label="Search the campus map"
           aria-autocomplete="list"
           aria-controls={listId}
@@ -172,7 +172,7 @@ function MapControls({ onControl, locating }) {
  * the category key, so there is no separate legend.)
  */
 export function MapOverlay({
-  initiatives, themes, activeCategory, onCategoryChange,
+  map, initiatives, themes, activeCategory, onCategoryChange,
   query, onQueryChange, selected, onSelect, onControl, locating,
 }) {
   return (
@@ -191,8 +191,8 @@ export function MapOverlay({
 
       <MapControls onControl={onControl} locating={locating} />
 
-      {/* GSAP-managed presence; floating side card / bottom sheet. */}
-      <InitiativeDetail selected={selected} onClose={() => onSelect(null)} />
+      {/* GSAP-managed presence; pin-anchored card / bottom sheet. */}
+      <InitiativeDetail map={map} selected={selected} onClose={() => onSelect(null)} />
     </div>
   );
 }

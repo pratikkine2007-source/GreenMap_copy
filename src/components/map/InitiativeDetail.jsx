@@ -3,13 +3,24 @@ import gsap from 'gsap';
 import { resolveTheme, prettyCategory } from '../../map/categories';
 import { CategoryGlyph, IconClose, IconPin, IconSpark } from './icons';
 
+// True only for a real narrow viewport. A width of 0 (a transient layout/pane
+// glitch) must NOT read as mobile, or `mode` flips sheet<->float and restarts
+// the entrance animation mid-flight.
+function isNarrow() {
+  if (typeof window === 'undefined') return false;
+  const w = window.innerWidth;
+  return w > 0 && w <= 760;
+}
 function useIsMobile() {
-  const [mobile, setMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 760px)').matches);
+  const [mobile, setMobile] = useState(isNarrow);
   useEffect(() => {
-    const mq = window.matchMedia('(max-width: 760px)');
-    const on = () => setMobile(mq.matches);
-    mq.addEventListener('change', on);
-    return () => mq.removeEventListener('change', on);
+    const on = () => setMobile((prev) => {
+      const w = window.innerWidth;
+      if (w === 0) return prev; // ignore glitch frames
+      return w <= 760;
+    });
+    window.addEventListener('resize', on);
+    return () => window.removeEventListener('resize', on);
   }, []);
   return mobile;
 }
@@ -19,7 +30,7 @@ function useIsMobile() {
  * mobile. Presence + choreography are driven by GSAP (scale/slide entrance,
  * staggered content, asymmetric faster exit). Mounted only while selected.
  */
-export function InitiativeDetail({ selected, onClose }) {
+export function InitiativeDetail({ map, selected, onClose }) {
   const isMobile = useIsMobile();
   const [data, setData] = useState(selected);
   const [shown, setShown] = useState(Boolean(selected));
@@ -29,6 +40,46 @@ export function InitiativeDetail({ selected, onClose }) {
   const reduce = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const mode = isMobile ? 'sheet' : 'float';
+
+  // Anchor the float card just to the right of the selected pin, tracking the
+  // map as it pans/zooms. Flips to the pin's left near the screen edge and
+  // clamps within the viewport so it never runs off-screen or under the topbar.
+  // Positions via the DOM ref (not React state) so the per-frame updates during
+  // the fly-to never re-render and interrupt the GSAP entrance.
+  const canAnchor = mode === 'float' && Boolean(map) && Number.isFinite(data?.lng) && Number.isFinite(data?.lat);
+  useLayoutEffect(() => {
+    if (!shown || !canAnchor) return undefined;
+    const GAP = 16;
+    const MARGIN = 12;
+    const TOP_SAFE = 168; // clear the search + filter toolbar
+    const update = () => {
+      const card = cardRef.current;
+      if (!card) return;
+      const p = map.project([data.lng, data.lat]);
+      const w = card.offsetWidth || 336;
+      const h = card.offsetHeight || 320;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      // Sit in the centre-right band: to the pin's right, but no further left
+      // than the viewport centre. Flip to the pin's left only if that overflows.
+      let left = Math.max(p.x + GAP, Math.round(vw * 0.5));
+      if (left + w > vw - MARGIN) left = p.x - GAP - w; // flip left if it overflows
+      left = Math.max(MARGIN, Math.min(left, vw - w - MARGIN));
+      let top = p.y - h * 0.5 - 28;               // roughly centre on the pin body
+      top = Math.max(TOP_SAFE, Math.min(top, vh - h - MARGIN));
+      card.style.left = `${left}px`;
+      card.style.top = `${top}px`;
+      card.style.right = 'auto';
+    };
+    update();
+    map.on('move', update);
+    window.addEventListener('resize', update);
+    return () => {
+      map.off('move', update);
+      window.removeEventListener('resize', update);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shown, canAnchor, data?.id, map]);
 
   // Presence: enter on select; animate out (faster) on deselect, then unmount.
   useEffect(() => {
