@@ -88,8 +88,15 @@ function applyCampusPalette(map) {
 }
 
 /** Original per-category pin colour + icon file (the teardrop marker look). */
-function markerVisual(category) {
-  const key = String(category ?? '').toLowerCase();
+function markerVisual(initiative) {
+  const key = String(initiative.category ?? '').trim().toLowerCase();
+  const title = String(initiative.title ?? '').trim().toLowerCase();
+  if (title === "team shunya's house") {
+    return { color: '#326f71', file: 'team-shunya-house.svg' };
+  }
+  if (title === 'motion sensor lights') {
+    return { color: '#FF48A0', file: 'motion-sensor-lights.svg' };
+  }
   const visuals = {
     water_conservation: { color: '#0040B7', file: 'water-conservation.svg' },
     water_reuse: { color: '#0040B7', file: 'water-reuse.svg' },
@@ -132,6 +139,31 @@ async function loadInitiatives() {
 function insideCampus(lng, lat) {
   return lng >= CAMPUS_MAX_BOUNDS[0][0] && lng <= CAMPUS_MAX_BOUNDS[1][0]
     && lat >= CAMPUS_MAX_BOUNDS[0][1] && lat <= CAMPUS_MAX_BOUNDS[1][1];
+}
+
+/**
+ * Give initiatives that sit at virtually the same point separate, clickable
+ * screen positions. The underlying coordinates remain untouched.
+ */
+function markerOffsets(initiatives) {
+  const NEARBY_DEGREES = 0.00012; // about 13 m at IIT Bombay's latitude
+  const groups = [];
+
+  initiatives.forEach((initiative) => {
+    const group = groups.find((items) => items.some((item) => (
+      Math.hypot(item.lng - initiative.lng, item.lat - initiative.lat) < NEARBY_DEGREES
+    )));
+    (group ?? groups[groups.push([]) - 1]).push(initiative);
+  });
+
+  return new Map(groups.flatMap((group) => {
+    if (group.length === 1) return [[group[0].id, [0, 0]]];
+    const radius = 24;
+    return group.map((initiative, index) => {
+      const angle = (-Math.PI / 2) + ((2 * Math.PI * index) / group.length);
+      return [initiative.id, [Math.round(Math.cos(angle) * radius), Math.round(Math.sin(angle) * radius)]];
+    });
+  }));
 }
 
 /**
@@ -281,8 +313,9 @@ export function OsmCampusMap({ active, onReady }) {
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready || initiatives.length === 0 || markersRef.current.size > 0) return;
+    const offsets = markerOffsets(initiatives);
     initiatives.forEach((it) => {
-      const visual = markerVisual(it.category);
+      const visual = markerVisual(it);
       const el = document.createElement('button');
       el.type = 'button';
       el.className = 'sustainability-map-marker';
@@ -300,7 +333,13 @@ export function OsmCampusMap({ active, onReady }) {
       pin.append(img);
       el.append(label, pin);
       el.addEventListener('click', (e) => { e.stopPropagation(); selectRef.current?.(it.id); });
-      const marker = new maplibregl.Marker({ element: el, anchor: 'bottom', rotationAlignment: 'viewport', pitchAlignment: 'viewport' })
+      const marker = new maplibregl.Marker({
+        element: el,
+        anchor: 'bottom',
+        offset: offsets.get(it.id) ?? [0, 0],
+        rotationAlignment: 'viewport',
+        pitchAlignment: 'viewport',
+      })
         .setLngLat([it.lng, it.lat])
         .addTo(map);
       markersRef.current.set(it.id, marker);
