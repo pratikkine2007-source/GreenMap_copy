@@ -187,16 +187,14 @@ h1 { margin-bottom: 10px; font-size: clamp(2rem, 5vw, 3.6rem); line-height: 1; }
   opacity: 0; transform: translateY(-8px); transition: opacity 700ms ease .35s, transform 700ms ease .35s; }
 .campus-experience.is-map .campus-hud { opacity: 1; transform: none; }
 .hud-brand { display: inline-flex; align-items: center; gap: 10px; padding: 8px 14px 8px 10px; border-radius: var(--gm-r-md);
-  background: transparent; border: 0; box-shadow: none; pointer-events: auto;
+  background: #fffdf7; border: 1px solid #d0d7cc; box-shadow: 0 4px 12px rgba(33,58,53,.18); pointer-events: auto;
   text-decoration: none; color: inherit; cursor: pointer;
   transition: border-color var(--gm-t) var(--gm-ease), transform var(--gm-t) var(--gm-ease), background var(--gm-t) var(--gm-ease); }
-.hud-brand:hover { background: transparent; transform: translateY(-1px); }
+.hud-brand:hover { background: #f2f7f1; transform: translateY(-1px); }
 .hud-brand:active { transform: translateY(0) scale(.99); }
 .hud-brand:focus-visible { outline: 2px solid var(--gm-brand); outline-offset: 3px; }
-.hud-brand strong { display: block; color: #ffffff; font-size: .9rem; font-weight: 700; letter-spacing: -.02em;
-  -webkit-text-stroke: .65px rgba(3,18,12,.82); paint-order: stroke fill; text-shadow: 0 1px 3px rgba(3,18,12,.85); }
-.hud-brand small { display: block; color: #8ff0bc; font-size: .68rem;
-  -webkit-text-stroke: .45px rgba(3,18,12,.82); paint-order: stroke fill; text-shadow: 0 1px 3px rgba(3,18,12,.85); }
+.hud-brand strong { display: block; color: #213a35; font-size: .9rem; font-weight: 700; letter-spacing: -.02em; }
+.hud-brand small { display: block; color: #2d9a67; font-size: .68rem; }
 
 /* =========================================================================
    Map overlay — search, filters, controls, legend, detail
@@ -272,9 +270,9 @@ h1 { margin-bottom: 10px; font-size: clamp(2rem, 5vw, 3.6rem); line-height: 1; }
 .gm-chip:hover { color: #213a35; border-color: #aabbb0; }
 .gm-chip:active { transform: scale(.96); }
 .gm-chip__dot { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--cat, var(--gm-brand)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--cat, var(--gm-brand)) 22%, transparent); }
-.gm-chip__count { color: var(--gm-text-mute); font-variant-numeric: tabular-nums; font-size: .78rem; }
+.gm-chip__count { color: #213a35; font-variant-numeric: tabular-nums; font-size: .78rem; }
 .gm-chip.is-active { color: #213a35; background: #f2f7f1; border-color: #83b99a; box-shadow: 0 2px 7px rgba(33,58,53,.14), inset 0 0 0 1px rgba(51,224,160,.16); }
-.gm-chip.is-active .gm-chip__count { color: #496259; }
+.gm-chip.is-active .gm-chip__count { color: #213a35; }
 .gm-chip--all.is-active { border-color: #83b99a; box-shadow: 0 2px 7px rgba(33,58,53,.14), inset 0 0 0 1px var(--gm-brand-soft); }
 .gm-chip__glyph { color: var(--cat, var(--gm-brand)); width: 15px; height: 15px; }
 .gm-chip__glyph svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
